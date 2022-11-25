@@ -20,24 +20,39 @@ Bothub handle the summation of different discord bot on a server and can be cont
 
 Every bots.toml file consists of the following sections
 
-- `control_bot`
-- bot
+- `control_bot`: a string which is the name of a bot in `bot` the array.
+- `bot`: a array of table, each table describes a bot to be runned by bothub.
+  - `name`: a string that unique identify a bot (required)
+  - `repo_path`: a string that locates a path to a cargo repository that contains the bot source code
+    - if `repo_path` isn't presented in the table, doing a rebuild for the bot will fail
+  - `executable_path`: bothub looks for the executable of the bot by default in `repo_path/target/release/bot_name`, if that's not the correct path then a `executable_path` is required
+  - atleast one of the two above value must be specified in a `bot` table
+  - `url`: a string that a url for bothub to do `git pull url` from
+    - this value should only present if `repo_path` is presented
+  - `build_args`: a string that is passed to cargo when running `cargo build args`
+    - by default, bothub do `cargo build --release` when a rebuild is requested
+    - this value should only present if `repo_path` is presented
+  - `run_args`: a string that is passed to the executable (not cargo!) when running
+  - `token`: a string that's requested from discord application website that can be used to authenticate the bot when establishing a gateway connection
+    - environment variable `DISCORD_TOKEN` is set to `token` for the bot
 
 Here's a example `bots.toml` file
 
 ```toml
-control_bot=""
+control_bot="bot_a"
 
-[bots.a_bot]
+[[bot]]
+name="bot_a"
 repo_path = "~/path/to/repo"
-token = "MTA0IAMNOTGIVINGYOUMYDiscoRd.BotTokEN.Liketh1sLo1D0nTC0pYthi5AndP4sTeIt"
-execuatable_path = "~/path/to/repo/target/release/bot_a"
-
-[bots.another]
-repo_path = "~/path/to/somewhere/else"
-token = "MTA0IAMNOTGIVINGYOUMYDiscoRd.BotTokEN.BoTsDoNtSh4r3T0keNsBTWJusTpAdd1n6"
 url = "https://alternative.origin.to/pull/from"
-execuatable_path = "~/path/to/somewhere/else/target/release/bot_a"
+build_args = "--release --all-features"
+token = "MTA0IAMNOTGIVINGYOUMYDiscoRd.BotTokEN.Liketh1sLo1D0nTC0pYthi5AndP4sTeIt"
+
+[[bots]]
+name="bot_b"
+executable_path = "~/path/to/somewhere/else/bin/bot_a"
+run_args = "--silent --no-cache --database-dir=/some/more/path"
+token = "MTA0IAMNOTGIVINGYOUMYDiscoRd.BotTokEN.BoTsDoNtSh4r3T0keNsBTWJusTpAdd1n6"
 ```
 
 ## Commands
