@@ -1,18 +1,18 @@
 #[derive(Debug)]
-pub struct Bot<'a> {
-    name: &'a str,
+pub struct Bot {
+    name: String,
     repo_path: Option<std::path::PathBuf>,
     executable_path: std::path::PathBuf,
-    url: Option<&'a str>,
-    build_args: Option<Vec<&'a str>>,
-    run_args: Option<Vec<&'a str>>,
-    token: Option<&'a str>,
+    url: Option<String>,
+    build_args: Option<Vec<String>>,
+    run_args: Option<Vec<String>>,
+    token: Option<String>,
 }
 
-impl Bot<'_> {
-    pub fn from_toml_table<'a>(table: &'a toml::value::Table) -> Result<Bot<'a>, String> {
+impl Bot {
+    pub fn from_toml_table(table: &toml::value::Table) -> Result<Bot, String> {
         let name = match table.get("name") {
-            Some(toml::Value::String(name)) => name.as_str(),
+            Some(toml::Value::String(name)) => name.to_string(),
             Some(_) => {
                 return Err("bot.name should be a string!".to_string());
             }
@@ -83,7 +83,7 @@ impl Bot<'_> {
                             "bot.url is presented although repo_path isn't!".to_string()
                         );
                     }
-                    Some(url.as_str())
+                    Some(url.to_string())
                 }
                 Err(_) => {
                     return Err("Given url cannot be parsed!".to_string());
@@ -100,10 +100,10 @@ impl Bot<'_> {
                 if repo_path.is_none() {
                     return Err("bot.build_args is presented although repo_path isn't!".to_string());
                 }
-                let mut args: Vec<&str> = Vec::new();
+                let mut args: Vec<String> = Vec::new();
                 for arg in arr {
                     if let toml::Value::String(arg) = arg {
-                        args.push(arg);
+                        args.push(arg.to_string());
                     } else {
                         return Err("element of bot.build_args should be a string!".to_string());
                     }
@@ -118,10 +118,10 @@ impl Bot<'_> {
 
         let run_args = match table.get("run_args") {
             Some(toml::Value::Array(arr)) => {
-                let mut args: Vec<&str> = Vec::new();
+                let mut args: Vec<String> = Vec::new();
                 for arg in arr {
                     if let toml::Value::String(arg) = arg {
-                        args.push(arg);
+                        args.push(arg.to_string());
                     } else {
                         return Err("element of bot.run_args should be a string!".to_string());
                     }
@@ -152,7 +152,7 @@ impl Bot<'_> {
         };*/
 
         let token = match table.get("token") {
-            Some(toml::Value::String(token)) => Some(token.as_str()),
+            Some(toml::Value::String(token)) => Some(token.to_string()),
             Some(_) => {
                 return Err("bot.url should be a string!".to_string());
             }
@@ -170,7 +170,7 @@ impl Bot<'_> {
         })
     }
 
-    pub fn name<'a>(&'a self) -> &'a str {
+    pub fn name(&self) -> &str {
         &self.name
     }
 
@@ -179,7 +179,7 @@ impl Bot<'_> {
             Some(repo_path) => {
                 let mut command = std::process::Command::new("git");
                 command.current_dir(repo_path).arg("pull");
-                if let Some(url) = self.url {
+                if let Some(url) = &self.url {
                     command.arg("--url").arg(url);
                 }
                 Ok(command)
