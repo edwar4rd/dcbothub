@@ -79,8 +79,43 @@ fn main() {
     // read in and verify bots.toml
     let (bots, control_bot) = match parse_bots() {
         Ok(botnctrl) => botnctrl,
-        Err(_) => { return;
+        Err(_) => {
+            return;
         }
     };
-    // start control bot (if presented) or set stdin as control
+
+    // start every bot in bots.toml
+    let mut bot_instances = HashMap::new();
+    for (name, bot) in &bots {
+        bot_instances.insert(
+            name,
+            bot.run()
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .spawn(),
+        );
+    }
+
+    // start listening to stdin/control_bot for commands
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        for (name, instance) in &mut bot_instances {
+            println!("Name: {}", name);
+            println!("Status: {}", match instance.as_mut().unwrap().try_wait().unwrap() {
+                Some(status) => status.to_string(),
+                None => "Running...".to_string()
+            });
+        }
+        println!("");
+        if control_bot.is_some() {
+            let instance = bot_instances.get_mut(control_bot.as_ref().unwrap()).unwrap();
+            println!("control_bot Name: {}", control_bot.as_ref().unwrap());
+            println!("Status: {}", match instance.as_mut().unwrap().try_wait().unwrap() {
+                Some(status) => status.to_string(),
+                None => "Running...".to_string()
+            });
+            println!("\n");
+        }
+    }
 }
