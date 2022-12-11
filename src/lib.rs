@@ -12,7 +12,12 @@ pub struct Bot {
 impl Bot {
     pub fn from_toml_table(table: &toml::value::Table) -> Result<Bot, String> {
         let name = match table.get("name") {
-            Some(toml::Value::String(name)) => name.to_string(),
+            Some(toml::Value::String(name)) => {
+                if name.contains(char::is_whitespace) {
+                    return Err("bot.name should contain non whitespace!".to_string());
+                }
+                name.to_string()
+            }
             Some(_) => {
                 return Err("bot.name should be a string!".to_string());
             }
@@ -79,9 +84,7 @@ impl Bot {
             Some(toml::Value::String(url)) => match url::Url::parse(url) {
                 Ok(_) => {
                     if repo_path.is_none() {
-                        return Err(
-                            "bot.url is presented although repo_path isn't!".to_string()
-                        );
+                        return Err("bot.url is presented although repo_path isn't!".to_string());
                     }
                     Some(url.to_string())
                 }
