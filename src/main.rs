@@ -1,6 +1,8 @@
 use dcbothub::Bot;
+use rustyline::error::ReadlineError;
 use std::collections::HashMap;
 use std::fs;
+use std::io::{self, BufRead, BufWriter, Write};
 use toml;
 
 fn parse_bots() -> Result<(HashMap<String, Bot>, Option<String>), ()> {
@@ -97,7 +99,86 @@ fn main() {
         );
     }
 
+    let (mut bot_in, mut bot_out) = if let Some(control_bot) = &control_bot {
+        match bot_instances.get_mut(control_bot).unwrap() {
+            Ok(control_bot) => (
+                Some(io::BufReader::new(control_bot.stdout.take().unwrap())),
+                Some(BufWriter::new(control_bot.stdin.take().unwrap())),
+            ),
+            Err(err) => {
+                println!("Failed starting control_bot:\n\t{}", err.to_string());
+                return;
+            }
+        }
+    } else {
+        (None, None)
+    };
+
+    let mut rl = if control_bot.is_none() {
+        Some(rustyline::Editor::<()>::new().expect("Failed to create a terminal input"))
+    } else {
+        None
+    };
+
     // start listening to stdin/control_bot for commands
+    loop {
+        let mut input = String::new();
+        if let Some(_) = &control_bot {
+            let bot_in = bot_in.as_mut().unwrap();
+            bot_in
+                .read_line(&mut input)
+                .expect("Failed reading line from control_bot");
+        } else {
+            let rl = rl
+                .as_mut()
+                .expect("Failed reading line from rustyline editor");
+            match rl.readline(">> ") {
+                Ok(line) => {
+                    rl.add_history_entry(line.as_str());
+                    input = line;
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("^C");
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("^D");
+                    break;
+                }
+                Err(err) => {
+                    println!("Error reading line: {}", err.to_string());
+                    break;
+                }
+            }
+        };
+        // TODO: process the input as commands and react accordingly
+        if control_bot.is_some() {
+            bot_out
+                .as_mut()
+                .unwrap()
+                .write_fmt(format_args!("Input: {input}"))
+                .expect("Failed outputing to control_bot");
+        } else {
+            println!("Input: {input}");
+        }
+    }
+
+    for (_, child) in bot_instances {
+        match child {
+            Ok(mut child) => {
+                if child
+                    .try_wait()
+                    .expect("Failed to check child status")
+                    .is_none()
+                {
+                    child.kill().expect("Failed to kill running child");
+                }
+            }
+            Err(_) => (),
+        }
+    }
+
+    /*
     loop {
         std::thread::sleep(std::time::Duration::from_secs(10));
         for (name, instance) in &mut bot_instances {
@@ -117,5 +198,5 @@ fn main() {
             });
             println!("\n");
         }
-    }
+    }*/
 }
