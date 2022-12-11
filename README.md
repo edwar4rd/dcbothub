@@ -7,8 +7,8 @@ Bothub handle the summation of different discord bot on a server and can be cont
 **MOST OF THE FEATURE AREN'T IMPLEMENTED YET!**
 **ONLY THE CHECKED LINES ARE CURRENTLY IMPLEMENTED**
 
-- [ ] When started, bothub looks for `bots.toml` which contain paths to bot repo and tokens for the bots.
-- [ ] By default, bothub starts all the listed bot as sub processes.
+- [x] When started, bothub looks for `bots.toml` which contain paths to bot repo and tokens for the bots.
+- [x] By default, bothub starts all the listed bot as sub processes.
 - [ ] Exactly one or none of the listed bot can be a controller bot, which bothub communicates to and reacts accordingly.
   - [ ] When not presented, bothub uses stdin/stdout instead.
 - [ ] Bothub can recieve command to 
@@ -23,6 +23,7 @@ Every bots.toml file consists of the following sections
 - `control_bot`: a string which is the name of a bot in `bot` the array.
 - `bot`: a array of table, each table describes a bot to be runned by bothub.
   - `name`: a string that unique identify a bot (required)
+    - including a whitespace or newline in the bot name is forbiddened since that will probably break something
   - `repo_path`: a string that locates a path to a cargo/git repository that contains the bot source code
     - if `repo_path` isn't presented in the table, doing a rebuild for the bot will fail
   - `executable_path`: bothub looks for the executable of the bot by default in `repo_path/target/release/bot_name`, if that's not the correct path then a `executable_path` is required
@@ -62,4 +63,17 @@ token = "MTA0IAMNOTGIVINGYOUMYDiscoRd.BotTokEN.BoTsDoNtSh4r3T0keNsBTWJusTpAdd1n6
 
 These commands are shared by stdin input and control bot, and are potentially dangerous.
 
-- [ ] `list [options]` list all bots with a their status
+- [ ] `list [options]` list name of all bots loaded from bots.toml each in a line
+  - [ ] bots can be filtered out using options
+- [ ] `list-status [options]` list every running/exited bot in a line with name and status listed
+  - [ ] bots can be filtered out using options
+- [ ] `status <bot name>` get the status of a specific bot
+- [ ] `clean <bot name>` perform a `cargo clean` at the repo of a bot
+  - subsequent `start` would fail if the executable is removed
+- [ ] `build <bot name>` perform a `cargo build` at the repo of a bot
+  - executable file would not be updated is cargo couldn't compile the executable
+- [ ] `pull <bot name>` perform a `git pull` at the repo of a bot
+- [ ] `start <bot name>` start the bot if it isn't already runninng
+- [ ] `msg <bot name> <message>` print a message to the stdin of the a bot
+- [ ] `kill <bot name>` stop a bot with the given name
+  - by sending a SIGKILL on *nix
