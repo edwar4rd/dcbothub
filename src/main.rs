@@ -1,4 +1,5 @@
-use dcbothub::Bot;
+use clap::Parser;
+use dcbothub::{parser, Bot};
 use rustyline::error::ReadlineError;
 use std::collections::HashMap;
 use std::fs;
@@ -115,7 +116,11 @@ fn main() {
     };
 
     let mut rl = if control_bot.is_none() {
-        Some(rustyline::Editor::<()>::new().expect("Failed to create a terminal input"))
+        let mut rl = rustyline::Editor::<()>::new().expect("Failed to create a terminal input");
+        if rl.load_history("rustyline_history").is_err() {
+            println!("No previous history.");
+        }
+        Some(rl)
     } else {
         None
     };
@@ -151,6 +156,13 @@ fn main() {
                 }
             }
         };
+
+        let parsed = parser::Cli::try_parse_from(
+            "dcbothub"
+                .split_whitespace()
+                .chain(input.split_whitespace()),
+        );
+
         // TODO: process the input as commands and react accordingly
         if control_bot.is_some() {
             bot_out
@@ -160,6 +172,27 @@ fn main() {
                 .expect("Failed outputing to control_bot");
         } else {
             println!("Input: {input}");
+            println!("Input: {:?}", parsed);
+            match &parsed {
+                Ok(cli) => match cli.command {
+                    Some(parser::Commands::Exit) => {
+                        break;
+                    }
+                    _ => todo!(),
+                },
+                Err(err) => match err.kind() {
+                    clap::error::ErrorKind::DisplayHelp => {
+                        println!("{}", err);
+                    }
+                    clap::error::ErrorKind::DisplayVersion => {
+                        println!("{}", err);
+                    }
+                    clap::error::ErrorKind::InvalidSubcommand => {
+                        println!("{}", err)
+                    }
+                    _ => todo!(),
+                },
+            }
         }
     }
 
@@ -178,6 +211,9 @@ fn main() {
         }
     }
 
+    if control_bot.is_none() {
+        rl.unwrap().save_history("rustyline_history").unwrap();
+    }
     /*
     loop {
         std::thread::sleep(std::time::Duration::from_secs(10));
