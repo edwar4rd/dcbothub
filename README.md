@@ -63,17 +63,23 @@ token = "MTA0IAMNOTGIVINGYOUMYDiscoRd.BotTokEN.BoTsDoNtSh4r3T0keNsBTWJusTpAdd1n6
 
 These commands are shared by stdin input and control bot, and are potentially dangerous.
 
-- [ ] `list [options]` list name of all bots loaded from bots.toml each in a line
+- [ ] `list [OPTIONS]` list name of all bots loaded from bots.toml each in a line
   - [ ] bots can be filtered out using options
-- [ ] `list-status [options]` list every running/exited bot in a line with name and status listed
+- [ ] `list-status [OPTIONS]` list every running/exited bot in a line with name and status listed
   - [ ] bots can be filtered out using options
-- [ ] `status <bot name>` get the status of a specific bot
-- [ ] `clean <bot name>` perform a `cargo clean` at the repo of a bot
+- [ ] `list-tasks [OPTIONS]` list running/finished tasks such as build processes or pull processes
+  - [ ] tasks can be filtered out using options
+- [ ] `status <BOT_NAME>` get the status of a specific bot
+- [ ] `task-status <TASK_ID>` get the status of a specific task
+- [ ] `clean <BOT_NAME>` perform a `cargo clean` at the repo of a bot
   - subsequent `start` would fail if the executable is removed
-- [ ] `build <bot name>` perform a `cargo build` at the repo of a bot
+- [ ] `build <BOT_NAME>` perform a `cargo build` at the repo of a bot
   - executable file would not be updated is cargo couldn't compile the executable
-- [ ] `pull <bot name>` perform a `git pull` at the repo of a bot
-- [ ] `start <bot name>` start the bot if it isn't already runninng
-- [ ] `msg <bot name> <message>` print a message to the stdin of the a bot
-- [ ] `kill <bot name>` stop a bot with the given name
+- [ ] `pull <BOT_NAME>` perform a `git pull` at the repo of a bot
+- the three above process are started as a task of dcbothub
+- output of the commands only indicates whether the task is started succesfully
+- [ ] `start <BOT_NAME>` start the bot if it isn't already runninng
+- [ ] `msg <BOT_NAME> [MESSAGE]...` print a message to the stdin of the a bot
+- [ ] `kill <BOT_NAME>` stop a bot with the given name
   - by sending a SIGKILL on *nix
+- [ ] `exit` stop all running tasks and bots and exit dcbothub
