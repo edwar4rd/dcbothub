@@ -163,36 +163,40 @@ fn main() {
                 .chain(input.split_whitespace()),
         );
 
+        /*let command_output = format!(
+            "Input: {}\nParsed: {}\n",
+            input.trim(),
+            format!("{}", parsed.as_ref().unwrap_err())
+                .trim()
+                .chars()
+                .take(1500)
+                .collect::<String>()
+        );*/
+
         // TODO: process the input as commands and react accordingly
+
+        let command_output = match &parsed {
+            Ok(cli) => match cli.command {
+                parser::Commands::Exit => {
+                    break;
+                }
+                _ => todo!(),
+            },
+            Err(_) => "\n".to_string(),
+        };
+
         if control_bot.is_some() {
-            bot_out
-                .as_mut()
-                .unwrap()
-                .write_fmt(format_args!("Input: {input}"))
+            let bot_out = bot_out.as_mut().unwrap();
+            write!(bot_out, "{}\n", command_output.lines().count())
                 .expect("Failed outputing to control_bot");
+            write!(bot_out, "{}", command_output).expect("Failed outputing to control_bot");
+            bot_out.flush().expect("Failed outputing to control_bot");
         } else {
-            println!("Input: {input}");
-            println!("Input: {:?}", parsed);
-            match &parsed {
-                Ok(cli) => match cli.command {
-                    Some(parser::Commands::Exit) => {
-                        break;
-                    }
-                    _ => todo!(),
-                },
-                Err(err) => match err.kind() {
-                    clap::error::ErrorKind::DisplayHelp => {
-                        println!("{}", err);
-                    }
-                    clap::error::ErrorKind::DisplayVersion => {
-                        println!("{}", err);
-                    }
-                    clap::error::ErrorKind::InvalidSubcommand => {
-                        println!("{}", err)
-                    }
-                    _ => todo!(),
-                },
-            }
+            print!("{}", command_output);
+        }
+
+        if parsed.is_err() {
+            print!("{}", parsed.unwrap_err());
         }
     }
 

@@ -69,6 +69,7 @@ These commands are shared by stdin input and control bot, and are potentially da
   - [ ] bots can be filtered out using options
 - [ ] `list-tasks [OPTIONS]` list running/finished tasks such as build processes or pull processes
   - [ ] tasks can be filtered out using options
+- None of the above commands guarantee a consistent order of the listing
 - [ ] `status <BOT_NAME>` get the status of a specific bot
 - [ ] `task-status <TASK_ID>` get the status of a specific task
 - [ ] `clean <BOT_NAME>` perform a `cargo clean` at the repo of a bot
@@ -83,3 +84,10 @@ These commands are shared by stdin input and control bot, and are potentially da
 - [ ] `kill <BOT_NAME>` stop a bot with the given name
   - by sending a SIGKILL on *nix
 - [ ] `exit` stop all running tasks and bots and exit dcbothub
+
+When running with a control_bot, dcbothub adds a line of one integer indicating how many line does the command output span.
+
+For example, running the dcbothub with the above example and assuming all paths are valid,
+if the bot sends `list\n`,
+dcbothub replies with `1\nbot_a bot_b\n`.
+This helps control_bot deals with multiline replies.
