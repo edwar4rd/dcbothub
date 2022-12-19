@@ -163,22 +163,43 @@ fn main() {
                 .chain(input.split_whitespace()),
         );
 
-        /*let command_output = format!(
-            "Input: {}\nParsed: {}\n",
-            input.trim(),
-            format!("{}", parsed.as_ref().unwrap_err())
-                .trim()
-                .chars()
-                .take(1500)
-                .collect::<String>()
-        );*/
-
-        // TODO: process the input as commands and react accordingly
-
         let command_output = match &parsed {
             Ok(cli) => match cli.command {
                 parser::Commands::Exit => {
                     break;
+                }
+                parser::Commands::List => {
+                    let mut output = String::new();
+                    for name in bots.keys() {
+                        output.push_str(&name);
+                        output.push(' ');
+                    }
+                    let mut output = output.trim_end().to_string();
+                    output.push('\n');
+                    output
+                }
+                parser::Commands::ListStatus => {
+                    let mut output = String::new();
+                    for (name, instance) in &mut bot_instances {
+                        output.push_str(&format!(
+                            "{} {} {}",
+                            name,
+                            if instance.is_ok() {
+                                "started"
+                            } else {
+                                "failed"
+                            },
+                            instance.as_mut().map_or_else(
+                                |error| error.to_string(),
+                                |child| child.try_wait().unwrap().map_or_else(
+                                    || "running".to_string(),
+                                    |status| format!("exited {}", status.code().unwrap_or(-1))
+                                )
+                            )
+                        ));
+                        output.push('\n');
+                    }
+                    output
                 }
                 _ => todo!(),
             },
@@ -218,25 +239,4 @@ fn main() {
     if control_bot.is_none() {
         rl.unwrap().save_history("rustyline_history").unwrap();
     }
-    /*
-    loop {
-        std::thread::sleep(std::time::Duration::from_secs(10));
-        for (name, instance) in &mut bot_instances {
-            println!("Name: {}", name);
-            println!("Status: {}", match instance.as_mut().unwrap().try_wait().unwrap() {
-                Some(status) => status.to_string(),
-                None => "Running...".to_string()
-            });
-        }
-        println!("");
-        if control_bot.is_some() {
-            let instance = bot_instances.get_mut(control_bot.as_ref().unwrap()).unwrap();
-            println!("control_bot Name: {}", control_bot.as_ref().unwrap());
-            println!("Status: {}", match instance.as_mut().unwrap().try_wait().unwrap() {
-                Some(status) => status.to_string(),
-                None => "Running...".to_string()
-            });
-            println!("\n");
-        }
-    }*/
 }

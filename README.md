@@ -66,6 +66,10 @@ These commands are shared by stdin input and control bot, and are potentially da
 - [ ] `list [OPTIONS]` list name of all bots loaded from bots.toml each in a line
   - [ ] bots can be filtered out using options
 - [ ] `list-status [OPTIONS]` list every running/exited bot in a line with name and status listed
+  - current format (of each line):
+    - *BotName* (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*)
+      - *ExitCode* is the exit code of exited bot as a decimal integer or -1 is it's terminated by a signal on unix
+      - *FailureDescription* is a textual description related to how the bot failed starting with the specified executable
   - [ ] bots can be filtered out using options
 - [ ] `list-tasks [OPTIONS]` list running/finished tasks such as build processes or pull processes
   - [ ] tasks can be filtered out using options
