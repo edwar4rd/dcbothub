@@ -75,6 +75,10 @@ These commands are shared by stdin input and control bot, and are potentially da
   - [ ] tasks can be filtered out using options
 - None of the above commands guarantee a consistent order of the listing
 - [ ] `status <BOT_NAME>` get the status of a specific bot
+  - current format (in a line):
+    - (`none`|`some` *BotName* (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*))
+      - *ExitCode* is the exit code of exited bot as a decimal integer or -1 is it's terminated by a signal on unix
+      - *FailureDescription* is a textual description related to how the bot failed starting with the specified executable
 - [ ] `task-status <TASK_ID>` get the status of a specific task
 - [ ] `clean <BOT_NAME>` perform a `cargo clean` at the repo of a bot
   - subsequent `start` would fail if the executable is removed

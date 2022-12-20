@@ -164,7 +164,7 @@ fn main() {
         );
 
         let command_output = match &parsed {
-            Ok(cli) => match cli.command {
+            Ok(cli) => match &cli.command {
                 parser::Commands::Exit => {
                     break;
                 }
@@ -200,6 +200,32 @@ fn main() {
                         output.push('\n');
                     }
                     output
+                }
+                parser::Commands::ListTasks => todo!(),
+                parser::Commands::Status { bot_name } => {
+                    match bot_instances.get_mut(bot_name) {
+                        Some(instance) => {
+                            format!(
+                                "some {} {} {}\n",
+                                bot_name,
+                                if instance.is_ok() {
+                                    "started"
+                                } else {
+                                    "failed"
+                                },
+                                instance.as_mut().map_or_else(
+                                    |error| error.to_string(),
+                                    |child| child.try_wait().unwrap().map_or_else(
+                                        || "running".to_string(),
+                                        |status| format!("exited {}", status.code().unwrap_or(-1))
+                                    )
+                                )
+                            )
+                        }
+                        None => {
+                            "none\n".to_string()
+                        }
+                    }
                 }
                 _ => todo!(),
             },
