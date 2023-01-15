@@ -82,7 +82,7 @@ Three separate hash tables are used by the program:
   - `bot_instances` represents all attempts of starting bot, including successful and failed attempts.
     - Only one instance can be started for every bot, and failed attempt must be removed before a new one is started.
   - `tasks` represents all attempts of performing a task, including successful and failed attempts
-    - Same type of task.
+    - The user should not create two running task for a single bot.
 
 It is currently designed that most task related command just add a task to the `tasks` table, and the user can only check whether a task is finished, or wait for it to finish with the `wait` command.( Possible plan: trigger a command when a task is fininshed, but that'll probably require one to rewrite the whole thing into a async program. )
 
@@ -114,6 +114,15 @@ The program will perform the following to restart `control_bot` if it had termin
 ## Commands
 
 These commands are shared by stdin input and control bot, and are potentially dangerous.
+
+|         |For Bots                  |For Tasks       |
+|---------|--------------------------|----------------|
+|New      |start                     |clean pull build|
+|List     |list list-status          |list-tasks      |
+|Status   |status                    |task-status     |
+|Stop     |kill (exit)               |terminate (exit)|
+|Other    |msg verify control-restart|wait            |
+|Remove   |conclude                  |finish          |
 
 - [ ] `list [OPTIONS]` list name of all bots loaded from bots.toml each in a line
   - [ ] bots can be filtered out using options
@@ -164,3 +173,68 @@ For example, running the dcbothub with the above example and assuming all paths 
 if the bot sends `list\n`,
 dcbothub replies with `1\nbot_a bot_b\n`.
 This helps control_bot deals with multiline replies.
+
+## Usage Example
+
+A user started the program on their desktop computer and checked if all of their bot were running.
+
+```
+>>> list-status
+cool-bot started running
+boring-bot started running
+```
+
+They then started to work on something else.
+Not long after, a user reported that `cool-bot` is currently offline.
+
+```
+>>> list-status
+cool-bot started exited 101
+boring-bot started running
+>>> conclude cool-bot
+exited 101
+1 3
+
+thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', src/commands.rs:152:13
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+```
+
+After they has found and solved the problem in the program, they pushed a patch to the git repo of the bot, and...
+
+```
+>>> list-tasks
+
+>>> pull cool-bot
+>>> list-tasks
+cool-bot-pull-0234
+>>> wait cool-bot-pull-0234
+0
+>>> finish cool-bot-pull-0234
+exited 0
+5 3
+Updating abcd1234..5678cdef
+Fast-forward
+ README.md | 88 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 76 insertions(+), 12 deletions(-)
+
+From https://github.com/someone/cool-bot
+   abcd1234..5678cdef  main       -> origin/main
+
+>>> build cool-bot
+>>> list-tasks
+cool-bot-build-0236
+>>> wait cool-bot-build-0236
+0
+>>> finish cool-bot-build-0236
+exited 0
+1 3
+
+   Compiling dcbothub v0.0.1 (/home/maatflow/Program/maatflow/Project/dcbothub)
+    Finished release [optimized] target(s) in 0.90s
+
+>>> start cool-bot
+>>> status cool-bot
+cool-bot started running
+boring-bot started running
+```
