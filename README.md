@@ -151,7 +151,7 @@ These commands are shared by stdin input and control bot, and are potentially da
 - output of the commands only indicates whether the task is started succesfully, and the assigned task id
 - [ ] `start <BOT_NAME>` start the bot if it isn't already runninng
 - [ ] `msg <BOT_NAME> [MESSAGE]...` print a message to the stdin of the a bot
-- [ ] `verify [BOT_NAME]` verify all paths loaded from `bots.toml`, or only paths of the bot `BOT_NAME` if presented.
+- [ ] `verify [BOT_NAME]` verify all paths loaded from `bots.toml`, or only paths of the bot `BOT_NAME` if presented
 - [ ] `kill <BOT_NAME>` stop a bot with the given name
   - by sending a SIGKILL on *nix
   - killing `control_bot` actives the aforementioned auto-recovery process of dcbothub

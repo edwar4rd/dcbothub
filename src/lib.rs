@@ -223,4 +223,5 @@ impl Bot {
     }
 }
 
-pub mod parser;
+pub mod cmd_parser;
+

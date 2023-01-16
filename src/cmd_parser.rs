@@ -17,25 +17,62 @@ pub enum Commands {
     /// list running/finished tasks such as build processes or pull processes
     ListTasks,
     /// get the status of a specific bot
-    Status { bot_name: String },
+    Status {
+        bot_name: String,
+    },
     /// get the status of a specific task
-    TaskStatus { task_id: String },
+    TaskStatus {
+        task_id: String,
+    },
     /// perform a "cargo clean" at the repo of a bot
-    Clean { bot_name: String },
+    Clean {
+        bot_name: String,
+    },
     /// perform a "cargo build" at the repo of a bot
-    Build { bot_name: String },
+    Build {
+        bot_name: String,
+    },
     /// perform a "git pull" at the repo of a bot
-    Pull { bot_name: String },
+    Pull {
+        bot_name: String,
+    },
     /// start the bot if it isn't already runninng
-    Start { bot_name: String },
+    Start {
+        bot_name: String,
+    },
     /// print a message to the stdin of the a bot
     Msg {
         bot_name: String,
         #[arg(action = clap::ArgAction::Append)]
         message: Vec<String>,
     },
+    /// verify all paths loaded from `bots.toml`,
+    /// or only paths of the bot `BOT_NAME` if presented
+    Verify {
+        bot_name: Option<String>,
+    },
     /// stop a bot with the given name
-    Kill { bot_name: String },
+    Kill {
+        bot_name: String,
+    },
+    /// kill the control bot, then attempt to restart it
+    ControlRestart,
+    /// stop a task with the given id
+    Terminate {
+        task_id: String,
+    },
+    /// print out the exit status and output of a stopped bot and remove it from `bot_instances`
+    Conclude {
+        bot_name: String,
+    },
+    /// blockingly wait a task to finish, or to fail, and return the exit status of the task
+    Wait {
+        task_id: String,
+    },
+    /// print out the exit status and output of a finished/failed task and remove it from `tasks`
+    Finish {
+        task_id: String,
+    },
     /// kill all running tasks and bots and exit dcbothub
     Exit,
 }

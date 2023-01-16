@@ -1,5 +1,5 @@
 use clap::Parser;
-use dcbothub::{parser, Bot};
+use dcbothub::{cmd_parser, Bot};
 use rustyline::error::ReadlineError;
 use std::collections::HashMap;
 use std::fs;
@@ -137,7 +137,7 @@ fn main() {
             let rl = rl
                 .as_mut()
                 .expect("Failed reading line from rustyline editor");
-            match rl.readline(">> ") {
+            match rl.readline(">>> ") {
                 Ok(line) => {
                     rl.add_history_entry(line.as_str());
                     input = line;
@@ -157,7 +157,7 @@ fn main() {
             }
         };
 
-        let parsed = parser::Cli::try_parse_from(
+        let parsed = cmd_parser::Cli::try_parse_from(
             "dcbothub"
                 .split_whitespace()
                 .chain(input.split_whitespace()),
@@ -165,10 +165,10 @@ fn main() {
 
         let command_output = match &parsed {
             Ok(cli) => match &cli.command {
-                parser::Commands::Exit => {
+                cmd_parser::Commands::Exit => {
                     break;
                 }
-                parser::Commands::List => {
+                cmd_parser::Commands::List => {
                     let mut output = String::new();
                     for name in bots.keys() {
                         output.push_str(&name);
@@ -178,7 +178,7 @@ fn main() {
                     output.push('\n');
                     output
                 }
-                parser::Commands::ListStatus => {
+                cmd_parser::Commands::ListStatus => {
                     let mut output = String::new();
                     for (name, instance) in &mut bot_instances {
                         output.push_str(&format!(
@@ -201,8 +201,8 @@ fn main() {
                     }
                     output
                 }
-                parser::Commands::ListTasks => todo!(),
-                parser::Commands::Status { bot_name } => {
+                cmd_parser::Commands::ListTasks => todo!(),
+                cmd_parser::Commands::Status { bot_name } => {
                     match bot_instances.get_mut(bot_name) {
                         Some(instance) => {
                             format!(
