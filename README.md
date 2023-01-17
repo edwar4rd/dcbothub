@@ -31,7 +31,7 @@ Every bots.toml file consists of the following sections:
     - if `repo_path` isn't presented in the table, doing a rebuild for the bot will fail
   - `executable_path`: bothub looks for the executable of the bot by default in `repo_path/target/release/bot_name`, if that's not the correct path then a `executable_path` is required
     - if both `repo_path` and `executable_path` is presented, `executable_path` is prefered over `repo_path`
-      - if `executable_path` is a relative path, it is treated as related to `executable_path` 
+      - if `executable_path` is a relative path, it is treated as related to `repo_path`
   - atleast one of the two above value must be specified in a `bot` table
     - i.e. the program must be able to infer a executable path
   - `url`: a string that a url for bothub to do `git pull url` from
@@ -115,14 +115,14 @@ The program will perform the following to restart `control_bot` if it had termin
 
 These commands are shared by stdin input and control bot, and are potentially dangerous.
 
-|         |For Bots                  |For Tasks       |
-|---------|--------------------------|----------------|
-|New      |start                     |clean pull build|
-|List     |list list-status          |list-tasks      |
-|Status   |status                    |task-status     |
-|Stop     |kill (exit)               |terminate (exit)|
-|Other    |msg verify control-restart|wait            |
-|Remove   |conclude                  |finish          |
+|        | For Bots                   | For Tasks        |
+| ------ | -------------------------- | ---------------- |
+| New    | start                      | clean pull build |
+| List   | list list-status           | list-tasks       |
+| Status | status                     | task-status      |
+| Stop   | kill (exit)                | terminate (exit) |
+| Other  | msg verify control-restart | wait             |
+| Remove | conclude                   | finish           |
 
 - [ ] `list [OPTIONS]` list name of all bots loaded from bots.toml each in a line
   - [ ] bots can be filtered out using options
@@ -134,14 +134,22 @@ These commands are shared by stdin input and control bot, and are potentially da
       - *FailureDescription* is a textual description related to how the bot failed starting with the specified executable
   - [ ] bots can be filtered out using options
 - [ ] `list-tasks [OPTIONS]` list running/finished tasks such as build processes or pull processes
+  - current format (of each line): 
+    - *TaskID* *TaskId* (`Clean`|`Build`|`Pull`) *SerialNumber* (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*)      -   - 
+      - *ExitCode* is the exit code of exited task as a decimal integer or -1 is it's terminated by a signal on unix
+      - *FailureDescription* is a textual description related to how the task failed starting
   - [ ] tasks can be filtered out using options
 - None of the above commands guarantee a consistent order of the listing
 - [ ] `status <BOT_NAME>` get the status of a specific bot_instance
   - current format (in a line):
-    - (`none`|`some` *BotName* (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*))
+    - (`none`|`some` (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*))
       - *ExitCode* is the exit code of exited bot as a decimal integer or -1 is it's terminated by a signal on unix
       - *FailureDescription* is a textual description related to how the bot failed starting with the specified executable
 - [ ] `task-status <TASK_ID>` get the status of a specific task
+  - current format (in a line):
+    - (`none`|`some` (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*))
+      - *ExitCode* is the exit code of exited task as a decimal integer or -1 is it's terminated by a signal on unix
+      - *FailureDescription* is a textual description related to how the task failed starting with the specified executable
 - [ ] `clean <BOT_NAME>` perform a `cargo clean` at the repo of a bot
   - subsequent `start` would fail if the executable is removed
 - [ ] `build <BOT_NAME>` perform a `cargo build` at the repo of a bot
@@ -156,15 +164,23 @@ These commands are shared by stdin input and control bot, and are potentially da
   - by sending a SIGKILL on *nix
   - killing `control_bot` actives the aforementioned auto-recovery process of dcbothub
   - to actually stop the program, the control bot should first gracefully shutdown itself then call the `exit` command
+  - current format (in a line):
+    - (`none`|`some` (`started` (`exited`|`killed`))|(`failed`))
 - [ ] `control-restart` kill the control bot, then attempt to restart it
   - a failed attempt to start the bot activates auto-recovery process
+  - calling `control-restart` without a `control_bot` is ignored
 - [ ] `terminate <TASK_ID>` stop a task with the given id
+  - current format (in a line):
+    - (`none`|`some` (`started` (`exited`|`killed`))|(`failed`))
 - [ ] `conclude <BOT_NAME>` print out the exit status and output of a stopped bot and remove it from `bot_instances`
 - [ ] `wait <TASK_ID>` blockingly wait a task to finish, or to fail, and return the exit status of the task
   - during the wait, the program wouldn't respond to any commands, and it is currently impossible to cancel the wait
+  - current format (in a line):
+    - (`none`|`some` (`started` (`exited`|`waiting exited`))|(`failed`))
 - [ ] `finish <TASK_ID>` print out the exit status and output of a finished/failed task and remove it from `tasks`
-- the output of `conclude` and `finish` command is in the same format, first the line counts of stdout and stderr separated by a space, then stdout, then stderr.
-  - bothub append a line after both stdour content and stderr content
+- the output of `conclude` and `finish` command is in the same format, first the exit status,then the line counts of stdout and stderr separated by a space, then stdout, then stderr.
+  - (`none`|`some` (`started` (`running`|`exited` *ExitCode*`\n`*StdoutLineCount* *StderrLineCount*`\n`*Stdout*`\n`*Stderr*))|(`failed` *FailureDescription*))
+      - *ExitCode* is the exit code of exited task as a decimal integer or -1 is it's terminated by a signal on unix
 - [ ] `exit` kill all running tasks and bots, then exit dcbothub
 
 When running with a control_bot, dcbothub adds a line of one integer indicating how many line does the command output span.
