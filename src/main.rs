@@ -277,9 +277,61 @@ where
                 cmd_parser::Commands::Clean { bot_name } => todo!(),
                 cmd_parser::Commands::Build { bot_name } => todo!(),
                 cmd_parser::Commands::Pull { bot_name } => todo!(),
-                cmd_parser::Commands::Start { bot_name } => todo!(),
-                cmd_parser::Commands::Msg { bot_name, message } => todo!(),
-                cmd_parser::Commands::Verify { bot_name } => todo!(),
+                cmd_parser::Commands::Start { bot_name } => {
+                    if bot_instances.contains_key(bot_name) {
+                        "exists\n".to_string()
+                    } else {
+                        match bots.get(bot_name) {
+                            Some(bot) => {
+                                bot_instances.insert(
+                                    bot_name.clone(),
+                                    bot.run()
+                                        .stdin(std::process::Stdio::piped())
+                                        .stdout(std::process::Stdio::piped())
+                                        .stderr(std::process::Stdio::piped())
+                                        .spawn()
+                                        .map_err(|err| err.to_string()),
+                                );
+                                "none some spawned\n".to_string()
+                            }
+                            None => "none none\n".to_string(),
+                        }
+                    }
+                }
+                cmd_parser::Commands::Msg { bot_name, message } => {
+                    match bot_instances.get_mut(bot_name) {
+                        Some(Ok(child)) => match child.try_wait().unwrap() {
+                            Some(_) => "started exited\n".to_string(),
+                            None => {
+                                let mut bot_out = BufWriter::new(child.stdin.as_mut().unwrap());
+                                write!(bot_out, "{}\n", message.join(" ")).unwrap();
+                                bot_out.flush().unwrap();
+                                format!("started running written\n")
+                            }
+                        },
+                        Some(Err(_)) => "failed\n".to_string(),
+                        None => "none\n".to_string(),
+                    }
+                }
+                cmd_parser::Commands::Verify { bot_name } => match bot_name {
+                    Some(bot_name) => match bots.get(bot_name) {
+                        Some(bot) => match bot.verify() {
+                            Ok(_) => "some ok\n".to_string(),
+                            Err(err) => format!("some err {}\n", err),
+                        },
+                        None => "none\n".to_string(),
+                    },
+                    None => {
+                        let mut output = String::new();
+                        for (bot_name, bot) in bots {
+                            output.push_str(&match bot.verify() {
+                                Ok(_) => format!("{} ok\n", bot_name),
+                                Err(err) => format!("{} err {}\n", bot_name, err),
+                            });
+                        }
+                        output
+                    }
+                },
                 cmd_parser::Commands::Kill { bot_name } => match bot_instances.get_mut(bot_name) {
                     Some(Ok(child)) => match child.try_wait().unwrap() {
                         Some(_) => "started exited\n".to_string(),
