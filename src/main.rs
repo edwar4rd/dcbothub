@@ -1,5 +1,5 @@
 use clap::Parser;
-use dcbothub::{bot_parser, cmd_parser, BotInstances, Bots, Tasks};
+use dcbothub::{bot_parser, cmd_parser, BotInstances, Bots, TaskType, Tasks};
 use rustyline::error::ReadlineError;
 use std::collections::HashMap;
 use std::io::{self, BufRead, BufWriter, Read, Write};
@@ -163,6 +163,7 @@ where
     F3: FnMut(&str) -> Result<(), String>,
     F4: FnMut(&mut BotInstances) -> Result<(), String>,
 {
+    let mut task_serial_counter = 0;
     // start listening to stdin/control_bot for commands
     loop {
         let input = get_input()?;
@@ -274,9 +275,78 @@ where
                     }
                     None => "none\n".to_string(),
                 },
-                cmd_parser::Commands::Clean { bot_name } => todo!(),
-                cmd_parser::Commands::Build { bot_name } => todo!(),
-                cmd_parser::Commands::Pull { bot_name } => todo!(),
+                cmd_parser::Commands::Clean { bot_name } => match bots.get(bot_name) {
+                    Some(bot) => {
+                        if bot.has_repo() {
+                            let task_id = format!("{:08}", task_serial_counter);
+                            tasks.insert(
+                                task_id.clone(),
+                                (
+                                    (bot_name.clone(), TaskType::Clean, task_serial_counter),
+                                    bot.clean().unwrap()
+                                        .stdin(std::process::Stdio::piped())
+                                        .stdout(std::process::Stdio::piped())
+                                        .stderr(std::process::Stdio::piped())
+                                        .spawn()
+                                        .map_err(|err| err.to_string()),
+                                ),
+                            );
+                            task_serial_counter += 1;
+                            format!("some {}\n", task_id)
+                        } else {
+                            "some no_repo\n".to_string()
+                        }
+                    }
+                    None => "none\n".to_string(),
+                },
+                cmd_parser::Commands::Build { bot_name } => match bots.get(bot_name) {
+                    Some(bot) => {
+                        if bot.has_repo() {
+                            let task_id = format!("{:08}", task_serial_counter);
+                            tasks.insert(
+                                task_id.clone(),
+                                (
+                                    (bot_name.clone(), TaskType::Clean, task_serial_counter),
+                                    bot.build().unwrap()
+                                        .stdin(std::process::Stdio::piped())
+                                        .stdout(std::process::Stdio::piped())
+                                        .stderr(std::process::Stdio::piped())
+                                        .spawn()
+                                        .map_err(|err| err.to_string()),
+                                ),
+                            );
+                            task_serial_counter += 1;
+                            format!("some {}\n", task_id)
+                        } else {
+                            "some no_repo\n".to_string()
+                        }
+                    }
+                    None => "none\n".to_string(),
+                },
+                cmd_parser::Commands::Pull { bot_name } => match bots.get(bot_name) {
+                    Some(bot) => {
+                        if bot.has_repo() {
+                            let task_id = format!("{:08}", task_serial_counter);
+                            tasks.insert(
+                                task_id.clone(),
+                                (
+                                    (bot_name.clone(), TaskType::Clean, task_serial_counter),
+                                    bot.pull().unwrap()
+                                        .stdin(std::process::Stdio::piped())
+                                        .stdout(std::process::Stdio::piped())
+                                        .stderr(std::process::Stdio::piped())
+                                        .spawn()
+                                        .map_err(|err| err.to_string()),
+                                ),
+                            );
+                            task_serial_counter += 1;
+                            format!("some {}\n", task_id)
+                        } else {
+                            "some no_repo\n".to_string()
+                        }
+                    }
+                    None => "none\n".to_string(),
+                },
                 cmd_parser::Commands::Start { bot_name } => {
                     if bot_instances.contains_key(bot_name) {
                         "exists\n".to_string()
@@ -396,19 +466,23 @@ where
                             }
                             None => "some started running\n".to_string(),
                         },
-                        Some(Err(_)) => "some failed\n".to_string(),
+                        Some(Err(err)) => {
+                            let output = format!("some failed {}\n", err);
+                            bot_instances.remove(bot_name);
+                            output
+                        },
                         None => "none\n".to_string(),
                     }
                 }
                 cmd_parser::Commands::Wait { task_id } => match tasks.get_mut(task_id) {
-                    Some(((_, Ok(child)))) => match child.try_wait().unwrap() {
+                    Some((_, Ok(child))) => match child.try_wait().unwrap() {
                         Some(_) => "some started exited\n".to_string(),
                         None => {
                             child.wait().unwrap();
                             "some started waiting exited\n".to_string()
                         }
                     },
-                    Some(((_, Err(_)))) => "some failed\n".to_string(),
+                    Some((_, Err(_))) => "some failed\n".to_string(),
                     None => "none\n".to_string(),
                 },
                 cmd_parser::Commands::Finish { task_id } => match tasks.get_mut(task_id) {
