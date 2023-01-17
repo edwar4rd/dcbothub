@@ -54,6 +54,15 @@ fn parse_bots() -> Result<(HashMap<String, Bot>, Option<String>), ()> {
                 return Err(());
             }
         };
+
+        match bot.verify() {
+            Ok(_) => {}
+            Err(err) => {
+                println!("Failed on verifying paths for {}:\n\t{}", bot.name(), err);
+                return Err(());
+            }
+        }
+
         if hashmap.insert(bot.name().to_string(), bot).is_some() {
             println!("Multiple bots in bots.toml have identical name!");
             return Err(());
@@ -222,9 +231,7 @@ fn main() {
                                 )
                             )
                         }
-                        None => {
-                            "none\n".to_string()
-                        }
+                        None => "none\n".to_string(),
                     }
                 }
                 _ => todo!(),

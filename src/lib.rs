@@ -14,7 +14,7 @@ impl Bot {
         let name = match table.get("name") {
             Some(toml::Value::String(name)) => {
                 if name.contains(char::is_whitespace) {
-                    return Err("bot.name should contain non whitespace!".to_string());
+                    return Err("bot.name should contain no whitespace!".to_string());
                 }
                 name.to_string()
             }
@@ -27,15 +27,7 @@ impl Bot {
         };
 
         let repo_path = match table.get("repo_path") {
-            Some(toml::Value::String(path)) => {
-                let path = std::path::Path::new(path).to_path_buf();
-                match git2::Repository::open(&path) {
-                    Ok(_) => Some(path),
-                    Err(_) => {
-                        return Err("bot.repo_path should lead to a git directiory!".to_string());
-                    }
-                }
-            }
+            Some(toml::Value::String(path)) => Some(std::path::Path::new(path).to_path_buf()),
             Some(_) => {
                 return Err("bot.repo_path should be a string!".to_string());
             }
@@ -52,11 +44,6 @@ impl Bot {
                         path = new_path.to_path_buf();
                     }
                 }
-                if path.is_dir() || !path.exists() {
-                    return Err(
-                        "Given executable_path doesn't lead to a executable file!".to_string()
-                    );
-                }
                 path
             }
             Some(_) => {
@@ -64,16 +51,7 @@ impl Bot {
             }
             None => {
                 if let Some(repo_path) = &repo_path {
-                    let path =
-                        repo_path.join(std::path::Path::new(&format!("target/release/{}", name)));
-                    if path.exists() {
-                        path
-                    } else {
-                        return Err(
-                            "repo_path/target/release/bot.name does't lead to a executable file!"
-                                .to_string(),
-                        );
-                    }
+                    repo_path.join(std::path::Path::new(&format!("target/release/{}", name)))
                 } else {
                     return Err("None of repo_path or executable_path is presented!".to_string());
                 }
@@ -137,23 +115,6 @@ impl Bot {
             None => None,
         };
 
-        /*
-        let build_args = match table.get("build_args") {
-            Some(toml::Value::String(build_args)) => Some(build_args.as_str()),
-            Some(_) => {
-                return Err("bot.build_args should be a string!".to_string());
-            }
-            None => None,
-        };
-
-        let run_args = match table.get("run_args") {
-            Some(toml::Value::String(run_args)) => Some(run_args.as_str()),
-            Some(_) => {
-                return Err("bot.run_args should be a string!".to_string());
-            }
-            None => None,
-        };*/
-
         let token = match table.get("token") {
             Some(toml::Value::String(token)) => Some(token.to_string()),
             Some(_) => {
@@ -173,17 +134,55 @@ impl Bot {
         })
     }
 
+    /// checks if repo_path(if specified) and inferred executable_path actaully exists on the file system
+    pub fn verify(&self) -> Result<(), String> {
+        match &self.repo_path {
+            Some(path) => match git2::Repository::open(path) {
+                Ok(_) => {}
+                Err(_) => {
+                    return Err("bot.repo_path should lead to a git directiory!".to_string());
+                }
+            },
+            None => {}
+        };
+
+        if !self.executable_path.is_file() {
+            return Err("Given executable_path doesn't lead to a executable file!".to_string());
+        }
+
+        return Ok(());
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn pull(&self) -> Result<std::process::Command, String> {
+    pub fn has_repo(&self) -> bool {
+        self.repo_path.is_some()
+    }
+
+    pub fn clean(&self) -> Result<std::process::Command, String> {
         match &self.repo_path {
             Some(repo_path) => {
-                let mut command = std::process::Command::new("git");
-                command.current_dir(repo_path).arg("pull");
-                if let Some(url) = &self.url {
-                    command.arg("--url").arg(url);
+                let mut command = std::process::Command::new("cargo");
+                command.current_dir(repo_path).arg("clean");
+                Ok(command)
+            }
+            None => {
+                return Err("Target bot doesn't have a repo_path!".to_string());
+            }
+        }
+    }
+
+    pub fn build(&self) -> Result<std::process::Command, String> {
+        match &self.repo_path {
+            Some(repo_path) => {
+                let mut command = std::process::Command::new("cargo");
+                command.current_dir(repo_path).arg("build");
+                if let Some(build_args) = &self.build_args {
+                    command.args(build_args);
+                } else {
+                    command.arg("--release");
                 }
                 Ok(command)
             }
@@ -193,15 +192,13 @@ impl Bot {
         }
     }
 
-    pub fn rebuild(&self) -> Result<std::process::Command, String> {
+    pub fn pull(&self) -> Result<std::process::Command, String> {
         match &self.repo_path {
             Some(repo_path) => {
-                let mut command = std::process::Command::new("cargo");
-                command.current_dir(repo_path).arg("build");
-                if let Some(build_args) = &self.build_args {
-                    command.args(build_args);
-                } else {
-                    command.arg("--release");
+                let mut command = std::process::Command::new("git");
+                command.current_dir(repo_path).arg("pull");
+                if let Some(url) = &self.url {
+                    command.arg("--url").arg(url);
                 }
                 Ok(command)
             }
@@ -224,4 +221,3 @@ impl Bot {
 }
 
 pub mod cmd_parser;
-
