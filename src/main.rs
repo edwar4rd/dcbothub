@@ -303,7 +303,8 @@ where
                                 task_id.clone(),
                                 (
                                     (bot_name.clone(), TaskType::Clean, task_serial_counter),
-                                    bot.clean().unwrap()
+                                    bot.clean()
+                                        .unwrap()
                                         .stdin(std::process::Stdio::piped())
                                         .stdout(std::process::Stdio::piped())
                                         .stderr(std::process::Stdio::piped())
@@ -326,8 +327,9 @@ where
                             tasks.insert(
                                 task_id.clone(),
                                 (
-                                    (bot_name.clone(), TaskType::Clean, task_serial_counter),
-                                    bot.build().unwrap()
+                                    (bot_name.clone(), TaskType::Build, task_serial_counter),
+                                    bot.build()
+                                        .unwrap()
                                         .stdin(std::process::Stdio::piped())
                                         .stdout(std::process::Stdio::piped())
                                         .stderr(std::process::Stdio::piped())
@@ -350,8 +352,9 @@ where
                             tasks.insert(
                                 task_id.clone(),
                                 (
-                                    (bot_name.clone(), TaskType::Clean, task_serial_counter),
-                                    bot.pull().unwrap()
+                                    (bot_name.clone(), TaskType::Pull, task_serial_counter),
+                                    bot.pull()
+                                        .unwrap()
                                         .stdin(std::process::Stdio::piped())
                                         .stdout(std::process::Stdio::piped())
                                         .stderr(std::process::Stdio::piped())
@@ -392,12 +395,17 @@ where
                     match bot_instances.get_mut(bot_name) {
                         Some(Ok(child)) => match child.try_wait().unwrap() {
                             Some(_) => "started exited\n".to_string(),
-                            None => {
-                                let mut bot_out = BufWriter::new(child.stdin.as_mut().unwrap());
-                                write!(bot_out, "{}\n", message.join(" ")).unwrap();
-                                bot_out.flush().unwrap();
-                                format!("started running written\n")
-                            }
+                            None => match child.stdin.as_mut() {
+                                Some(stdin) => {
+                                    let mut bot_out = BufWriter::new(stdin);
+                                    write!(bot_out, "{}\n", message.join(" ")).unwrap();
+                                    bot_out.flush().unwrap();
+                                    "started running written\n".to_string()
+                                }
+                                None => {
+                                    "started running failed\n".to_string()
+                                }
+                            },
                         },
                         Some(Err(_)) => "failed\n".to_string(),
                         None => "none\n".to_string(),
@@ -490,7 +498,7 @@ where
                             let output = format!("some failed {}\n", err);
                             bot_instances.remove(bot_name);
                             output
-                        },
+                        }
                         None => "none\n".to_string(),
                     }
                 }
