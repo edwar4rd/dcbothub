@@ -188,6 +188,26 @@ where
                     output.push('\n');
                     output
                 }
+                cmd_parser::Commands::ListExisting => {
+                    let mut output = String::new();
+                    for name in bot_instances.keys() {
+                        output.push_str(&name);
+                        output.push(' ');
+                    }
+                    let mut output = output.trim_end().to_string();
+                    output.push('\n');
+                    output
+                }
+                cmd_parser::Commands::ListExecuting => {
+                    let mut output = String::new();
+                    for name in tasks.keys() {
+                        output.push_str(&name);
+                        output.push(' ');
+                    }
+                    let mut output = output.trim_end().to_string();
+                    output.push('\n');
+                    output
+                }
                 cmd_parser::Commands::ListStatus => {
                     let mut output = String::new();
                     for (name, instance) in bot_instances.iter_mut() {

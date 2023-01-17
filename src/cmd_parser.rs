@@ -10,9 +10,13 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// list name of all bots loaded from bots.toml each in a line
+    /// list name of all bots loaded from bots.toml in a line
     List,
-    /// list every running/exited bot in a line with name and status listed
+    /// list every running/exited bot in a line
+    ListExisting,
+    /// list every running/exited task in a line
+    ListExecuting,
+    /// list every running/exited bot in a line with name and status
     ListStatus,
     /// list running/finished tasks such as build processes or pull processes
     ListTasks,

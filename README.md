@@ -115,19 +115,21 @@ The program will perform the following to restart `control_bot` if it had termin
 
 These commands are shared by stdin input and control bot, and are potentially dangerous.
 
-|        | For Bots                   | For Tasks        |
-| ------ | -------------------------- | ---------------- |
-| New    | start                      | clean pull build |
-| List   | list list-status           | list-tasks       |
-| Status | status                     | task-status      |
-| Stop   | kill (exit)                | terminate (exit) |
-| Other  | msg verify control-restart | wait             |
-| Remove | conclude                   | finish           |
+|        | For Bots                      | For Tasks                |
+| ------ | ----------------------------- | ------------------------ |
+| New    | start                         | clean pull build         |
+| List   | list list-existing list-status| list-executing list-tasks|
+| Status | status                        | task-status              |
+| Stop   | kill (exit)                   | terminate (exit)         |
+| Other  | msg verify control-restart    | wait                     |
+| Remove | conclude                      | finish                   |
 
-- [ ] `list [OPTIONS]` list name of all bots loaded from bots.toml each in a line
+- [ ] `list [OPTIONS]` list name of all bots loaded from bots.toml in a line
   - [ ] bots can be filtered out using options
   - since bots.toml is only loaded once in the startup of bothub, `list` should return the same results every time called, unless a status related option is included.
-- [ ] `list-status [OPTIONS]` list every running/exited bot in a line with name and status listed
+- [ ] `list-existing` list every running/exited bot in a line
+- [ ] `list-executing` list every running/exited task in a line
+- [ ] `list-status [OPTIONS]` list every running/exited bot with name and status listed
   - current format (of each line):
     - *BotName* (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*)
       - *ExitCode* is the exit code of exited bot as a decimal integer or -1 is it's terminated by a signal on unix
@@ -135,7 +137,7 @@ These commands are shared by stdin input and control bot, and are potentially da
   - [ ] bots can be filtered out using options
 - [ ] `list-tasks [OPTIONS]` list running/finished tasks such as build processes or pull processes
   - current format (of each line): 
-    - *TaskID* *TaskId* (`Clean`|`Build`|`Pull`) *SerialNumber* (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*)      -   - 
+    - *TaskID* (`Clean`|`Build`|`Pull`) *SerialNumber* (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*)      -   - 
       - *ExitCode* is the exit code of exited task as a decimal integer or -1 is it's terminated by a signal on unix
       - *FailureDescription* is a textual description related to how the task failed starting
   - [ ] tasks can be filtered out using options
@@ -156,10 +158,19 @@ These commands are shared by stdin input and control bot, and are potentially da
   - executable file would not be updated is cargo couldn't compile the executable
 - [ ] `pull <BOT_NAME>` perform a `git pull` at the repo of a bot
 - the three above commands start a process as a task of dcbothub
-- output of the commands only indicates whether the task is started succesfully, and the assigned task id
-- [ ] `start <BOT_NAME>` start the bot if it isn't already runninng
+- output of the commands only indicates whether the task is started, and the assigned task id
+  - current format:
+    - (`some` (`no_repo`|*TaskID*)| `none`)
+- [ ] `start <BOT_NAME>` start the bot if it isn't already in the `bot_instances` hashmap
+  - current format:
+    - (`exists` | `none` (`some spawned` | `none`))
 - [ ] `msg <BOT_NAME> [MESSAGE]...` print a message to the stdin of the a bot
+  - current format:
+    - (`none`|`some` (`started` (`exited`|`running written`))|(`failed`))
 - [ ] `verify [BOT_NAME]` verify all paths loaded from `bots.toml`, or only paths of the bot `BOT_NAME` if presented
+  - current format (with `BOT_NAME` specified):
+    - (`none` | (`some` (`ok` | (`err` *VerificationError*))))
+      - *VerificationError* is a textual description related to why didn't the bot passes the verification
 - [ ] `kill <BOT_NAME>` stop a bot with the given name
   - by sending a SIGKILL on *nix
   - killing `control_bot` actives the aforementioned auto-recovery process of dcbothub
