@@ -3,7 +3,6 @@ pub struct Bot {
     name: String,
     repo_path: Option<std::path::PathBuf>,
     executable_path: std::path::PathBuf,
-    url: Option<String>,
     build_args: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
     token: Option<String>,
@@ -58,24 +57,6 @@ impl Bot {
             }
         };
 
-        let url = match table.get("url") {
-            Some(toml::Value::String(url)) => match url::Url::parse(url) {
-                Ok(_) => {
-                    if repo_path.is_none() {
-                        return Err("bot.url is presented although repo_path isn't!".to_string());
-                    }
-                    Some(url.to_string())
-                }
-                Err(_) => {
-                    return Err("Given url cannot be parsed!".to_string());
-                }
-            },
-            Some(_) => {
-                return Err("bot.url should be a string!".to_string());
-            }
-            None => None,
-        };
-
         let build_args = match table.get("build_args") {
             Some(toml::Value::Array(arr)) => {
                 if repo_path.is_none() {
@@ -118,7 +99,7 @@ impl Bot {
         let token = match table.get("token") {
             Some(toml::Value::String(token)) => Some(token.to_string()),
             Some(_) => {
-                return Err("bot.url should be a string!".to_string());
+                return Err("bot.token should be a string!".to_string());
             }
             None => None,
         };
@@ -127,7 +108,6 @@ impl Bot {
             name,
             repo_path,
             executable_path,
-            url,
             build_args,
             run_args,
             token,
@@ -197,9 +177,6 @@ impl Bot {
             Some(repo_path) => {
                 let mut command = std::process::Command::new("git");
                 command.current_dir(repo_path).arg("pull");
-                if let Some(url) = &self.url {
-                    command.arg("--url").arg(url);
-                }
                 Ok(command)
             }
             None => {

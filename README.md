@@ -34,8 +34,6 @@ Every bots.toml file consists of the following sections:
       - if `executable_path` is a relative path, it is treated as related to `repo_path`
   - atleast one of the two above value must be specified in a `bot` table
     - i.e. the program must be able to infer a executable path
-  - `url`: a string that a url for bothub to do `git pull url` from
-    - this value should only present if `repo_path` is presented
   - `build_args`: a array of string that is passed to cargo when running `cargo build args`
     - by default, bothub do `cargo build --release` when a rebuild is requested
     - this value should only present if `repo_path` is presented
@@ -51,7 +49,6 @@ control_bot="bot_a"
 [[bot]]
 name="bot_a"
 repo_path = "~/path/to/repo"
-url = "https://alternative.origin.to/pull/from"
 build_args = ["--release","--all-features"]
 token = "MTA0IAMNOTGIVINGYOUMYDiscoRd.BotTokEN.Liketh1sLo1D0nTC0pYthi5AndP4sTeIt"
 
