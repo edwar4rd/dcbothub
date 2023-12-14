@@ -149,7 +149,8 @@ These commands are shared by stdin input and control bot, and are potentially da
     - (`none`|`some` (`started` (`running`|`exited` *ExitCode*))|(`failed` *FailureDescription*))
       - *ExitCode* is the exit code of exited task as a decimal integer or -1 is it's terminated by a signal on unix
       - *FailureDescription* is a textual description related to how the task failed starting with the specified executable
-- [ ] `clean <BOT_NAME>` perform a `cargo clean` at the repo of a bot
+- [ ] `clean <BOT_NAME>` perform a `cargo clean` at the repo of a bot, but saves the executable if it might be removed by the operation
+- [ ] `cleanall <BOT_NAME>` perform a `cargo clean` at the repo of a bot
   - subsequent `start` would fail if the executable is removed
 - [ ] `build <BOT_NAME>` perform a `cargo build` at the repo of a bot
   - executable file would not be updated is cargo couldn't compile the executable

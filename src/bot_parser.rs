@@ -26,7 +26,14 @@ impl Bot {
         };
 
         let repo_path = match table.get("repo_path") {
-            Some(toml::Value::String(path)) => Some(std::path::Path::new(path).to_path_buf()),
+            Some(toml::Value::String(path)) => Some(
+                match std::path::Path::new(path).to_path_buf().canonicalize() {
+                    Ok(path) => path,
+                    Err(_) => {
+                        return Err("bot.repo_path should be resolvable to a directory!".into())
+                    }
+                },
+            ),
             Some(_) => {
                 return Err("bot.repo_path should be a string!".to_string());
             }
@@ -142,6 +149,40 @@ impl Bot {
     }
 
     pub fn clean(&self) -> Result<std::process::Command, String> {
+        let executable_path = match self.executable_path.canonicalize() {
+            Ok(path) => path,
+            Err(_) => {
+                return Err(
+                    "Failed resolving repo/executable relation, use cleanall instead!".into(),
+                )
+            }
+        };
+        let repo_path = match &self.repo_path {
+            Some(path) => match path.canonicalize() {
+                Ok(path) => path,
+                Err(_) => {
+                    return Err(
+                        "Failed resolving repo/executable relation, use cleanall instead!".into(),
+                    )
+                }
+            },
+            None => {
+                return Err("Target bot doesn't have a repo_path!".to_string());
+            }
+        };
+
+        if executable_path.starts_with(&repo_path) {
+            let mut command = std::process::Command::new("bash");
+            command.current_dir(repo_path).arg("-c").arg(format!("(export EXEC_PATH={}; (export DCBOTHUB_TMP_EXEC_PATH=\"dcbothub_tmp_exec_$(echo $RANDOM)\"; mv $EXEC_PATH $DCBOTHUB_TMP_EXEC_PATH && cargo clean && mkdir -p \"$(dirname $EXEC_PATH)\" && mv $DCBOTHUB_TMP_EXEC_PATH $EXEC_PATH;))",self.executable_path.display()));
+            Ok(command)
+        } else {
+            let mut command = std::process::Command::new("cargo");
+            command.current_dir(repo_path).arg("clean");
+            Ok(command)
+        }
+    }
+
+    pub fn clean_all(&self) -> Result<std::process::Command, String> {
         match &self.repo_path {
             Some(repo_path) => {
                 let mut command = std::process::Command::new("cargo");

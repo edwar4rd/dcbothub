@@ -69,13 +69,17 @@ fn main() {
                 |o| Ok(eprint!("{o}")),
                 |bot_instances| {
                     let _control_bot = bot_instances.get_mut(control_bot).unwrap();
+                    let _control_bot = _control_bot.as_mut().unwrap();
+                    _control_bot.kill().map_err(|err| err.to_string())?;
+                    let mut out_buffer = String::new();
                     _control_bot
-                        .as_mut()
+                        .stderr
+                        .take()
                         .unwrap()
-                        .kill()
-                        .map_err(|err| err.to_string())?;
-                    bot_instances.remove(control_bot);
-                    let mut _control_bot = bots
+                        .read_to_string(&mut out_buffer)
+                        .unwrap();
+
+                    let mut new_control_bot = bots
                         .get(control_bot)
                         .unwrap()
                         .run()
@@ -85,9 +89,12 @@ fn main() {
                         .spawn()
                         .map_err(|err| err.to_string())?;
                     *bot_in.lock().unwrap() =
-                        io::BufReader::new(_control_bot.stdout.take().unwrap());
-                    *bot_out.lock().unwrap() = BufWriter::new(_control_bot.stdin.take().unwrap());
-                    bot_instances.insert(control_bot.clone(), Ok(_control_bot));
+                        io::BufReader::new(new_control_bot.stdout.take().unwrap());
+                    *bot_out.lock().unwrap() =
+                        BufWriter::new(new_control_bot.stdin.take().unwrap());
+                    _control_bot.try_wait().unwrap();
+                    assert!(bot_instances.remove(control_bot).is_some());
+                    bot_instances.insert(control_bot.clone(), Ok(new_control_bot));
                     Ok(())
                 },
             )
@@ -320,6 +327,31 @@ where
                     }
                     None => "none\n".to_string(),
                 },
+                cmd_parser::Commands::CleanAll { bot_name } => match bots.get(bot_name) {
+                    Some(bot) => {
+                        if bot.has_repo() {
+                            let task_id = format!("{:08}", task_serial_counter);
+                            tasks.insert(
+                                task_id.clone(),
+                                (
+                                    (bot_name.clone(), TaskType::Clean, task_serial_counter),
+                                    bot.clean_all()
+                                        .unwrap()
+                                        .stdin(std::process::Stdio::piped())
+                                        .stdout(std::process::Stdio::piped())
+                                        .stderr(std::process::Stdio::piped())
+                                        .spawn()
+                                        .map_err(|err| err.to_string()),
+                                ),
+                            );
+                            task_serial_counter += 1;
+                            format!("some {}\n", task_id)
+                        } else {
+                            "some no_repo\n".to_string()
+                        }
+                    }
+                    None => "none\n".to_string(),
+                },
                 cmd_parser::Commands::Build { bot_name } => match bots.get(bot_name) {
                     Some(bot) => {
                         if bot.has_repo() {
@@ -402,9 +434,7 @@ where
                                     bot_out.flush().unwrap();
                                     "started running written\n".to_string()
                                 }
-                                None => {
-                                    "started running failed\n".to_string()
-                                }
+                                None => "started running failed\n".to_string(),
                             },
                         },
                         Some(Err(_)) => "failed\n".to_string(),

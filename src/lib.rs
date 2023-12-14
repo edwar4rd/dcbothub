@@ -4,6 +4,7 @@ pub mod cmd_parser;
 #[derive(std::fmt::Debug)]
 pub enum TaskType {
     Clean,
+    CleanAll,
     Build,
     Pull,
 }
@@ -15,6 +16,7 @@ impl std::fmt::Display for TaskType {
             "{}",
             match self {
                 Self::Clean => "Clean",
+                Self::CleanAll => "CleanAll",
                 Self::Build => "Build",
                 Self::Pull => "Pull",
             }
