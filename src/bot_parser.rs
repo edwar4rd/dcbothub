@@ -228,6 +228,9 @@ impl Bot {
 
     pub fn run(&self) -> std::process::Command {
         let mut command = std::process::Command::new(&self.executable_path);
+        if let Some(repo_path) = &self.repo_path {
+            command.current_dir(repo_path);
+        }
         if let Some(run_args) = &self.run_args {
             command.args(run_args);
         }
